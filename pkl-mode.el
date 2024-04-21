@@ -40,10 +40,10 @@
 ;; Internal variables
 
 (defvar pkl--feature-rainbow-delimiters nil
-  "Whether rainbow-delimiters is available.")
+  "Whether `rainbow-delimiters-mode' is available.")
 
 (defvar pkl--feature-copilot nil
-  "Whether Copilot is available.")
+  "Whether `copilot-mode' is available.")
 
 ;; Optional features
 
@@ -218,12 +218,6 @@
 
   ;; Integrations
 
-  (when pkl-enable-copilot
-    (if pkl--feature-copilot
-        (progn
-          (add-to-list 'copilot-indentation-alist '(pkl-mode tab-width)))
-      (message "pkl-enable-copilot is t but copilot.el is missing.  Please install it or set pkl-enable-copilot to nil.")))
-
   (when pkl-enable-rainbow-delimiters
     (if pkl--feature-rainbow-delimiters
         (progn
@@ -232,6 +226,13 @@
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.pkl\\'" . pkl-mode))
+
+;;;###autoload
+(when pkl-enable-copilot
+  (if pkl--feature-copilot
+      (progn
+        (add-to-list 'copilot-indentation-alist '(pkl-mode tab-width)))
+    (message "pkl-enable-copilot is t but copilot.el is missing.  Please install it or set pkl-enable-copilot to nil.")))
 
 (provide 'pkl-mode)
 ;;; pkl-mode.el ends here
