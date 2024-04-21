@@ -227,7 +227,6 @@
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.pkl\\'" . pkl-mode))
 
-;;;###autoload
 (when pkl-enable-copilot
   (if pkl--feature-copilot
       (progn
