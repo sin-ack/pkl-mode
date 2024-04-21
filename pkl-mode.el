@@ -20,8 +20,43 @@
 (eval-when-compile (require 'rx))
 (require 'font-lock)
 
+;; Customization
+
+(defgroup pkl nil
+  "Major mode for editing Pkl files."
+  :group 'languages
+  :prefix "pkl-")
+
+(defcustom pkl-enable-rainbow-delimiters t
+  "Whether to enable rainbow-delimiters integration in Pkl mode."
+  :type 'boolean
+  :group 'pkl)
+
+(defcustom pkl-enable-copilot t
+  "Whether to enable Copilot integration in Pkl mode."
+  :type 'boolean
+  :group 'pkl)
+
+;; Internal variables
+
+(defvar pkl--feature-rainbow-delimiters nil
+  "Whether rainbow-delimiters is available.")
+
+(defvar pkl--feature-copilot nil
+  "Whether Copilot is available.")
+
+;; Optional features
+
+(when (and pkl-enable-rainbow-delimiters (require 'rainbow-delimiters nil t))
+  (setq pkl--feature-rainbow-delimiters t))
+(when (and pkl-enable-copilot (require 'copilot nil t))
+  (setq pkl--feature-copilot t))
+
+;; Indentation
+
 (defun pkl-indent-line ()
   "Indent current line as Pkl code."
+  (interactive)
   (let ((start-of-current-line (save-excursion (beginning-of-line) (point)))
         (level 0))
     (save-excursion
@@ -36,6 +71,8 @@
           (setq level (- level 1))))
     (if (< level 0) (setq level 0))
     (indent-line-to (* level tab-width))))
+
+;; Syntax highlighting via font-lock
 
 (defconst pkl--identifier-rx
   (rx (any alpha ?$ ?_) (0+ (or (syntax word) ?$ ?_))))
@@ -145,6 +182,8 @@
     (,pkl--float-rx . font-lock-constant-face)
     (,pkl--integer-rx . font-lock-constant-face)))
 
+;; Syntax table
+
 (defconst pkl-mode-syntax-table
   (let ((table (make-syntax-table)))
     (modify-syntax-entry ?\" "\"" table)
@@ -166,6 +205,8 @@
     (modify-syntax-entry ?. "." table)
     table))
 
+;; Major mode definition
+
 ;;;###autoload
 (define-derived-mode pkl-mode prog-mode "Pkl"
   "Major mode for editing Pkl files."
@@ -175,11 +216,19 @@
   (setq-local font-lock-defaults '(pkl-font-lock-keywords))
   (setq-local indent-line-function 'pkl-indent-line)
 
-  (when (boundp 'copilot-indentation-alist)
-    (add-to-list 'copilot-indentation-alist '(pkl-mode tab-width)))
+  ;; Integrations
 
-  (when (fboundp 'rainbow-delimiters-mode)
-    (rainbow-delimiters-mode 1)))
+  (when pkl-enable-copilot
+    (if pkl--feature-copilot
+        (progn
+          (add-to-list 'copilot-indentation-alist '(pkl-mode tab-width)))
+      (message "pkl-enable-copilot is t but copilot.el is missing.  Please install it or set pkl-enable-copilot to nil.")))
+
+  (when pkl-enable-rainbow-delimiters
+    (if pkl--feature-rainbow-delimiters
+        (progn
+          (rainbow-delimiters-mode 1))
+      (message "pkl-enable-rainbow-delimiters is t but rainbow-delimiters.el is missing.  Please install it or set pkl-enable-rainbow-delimiters to nil."))))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.pkl\\'" . pkl-mode))
