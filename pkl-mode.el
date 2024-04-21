@@ -214,7 +214,7 @@
   (setq-local comment-start "// ")
   (setq-local comment-start-skip "//+\\s-*")
   (setq-local font-lock-defaults '(pkl-font-lock-keywords))
-  (setq-local indent-line-function 'pkl-indent-line)
+  (setq-local indent-line-function #'pkl-indent-line)
 
   ;; Integrations
 
