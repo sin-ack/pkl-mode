@@ -67,18 +67,43 @@ available, and silently disabled otherwise."
   "Indent current line as Pkl code."
   (interactive)
   (let ((start-of-current-line (save-excursion (beginning-of-line) (point)))
-        (level 0))
+        ;; The current level of brackets we are in.
+        (level 0)
+        ;; Whether we have just encountered an equals sign.
+        ;; If we get a newline immediately after this, we set
+        ;; equals-indenting-level to the current level.
+        (saw-equals-sign nil)
+        ;; The level at which we started indenting with an equals sign.
+        ;; If we complete a newline at this level, the equals indenting
+        ;; will stop.
+        (equals-indenting-level nil))
     (save-excursion
       (goto-char (point-min))
       (while (< (point) start-of-current-line)
+        ;; If we have closed all the brackets while indenting after an equals
+        ;; sign, and encountered a newline, stop the extra indentation.
+        (if (and equals-indenting-level
+                 (<= level equals-indenting-level)
+                 (looking-at "\n"))
+            (setq equals-indenting-level nil))
+
+        ;; If we have just encountered an equals sign, and the next character
+        ;; is a newline, set equals-indenting-level to the current level.
+        (if (and saw-equals-sign (looking-at "\n"))
+            (setq equals-indenting-level level))
+        (setq saw-equals-sign nil)
+
         (cond ((looking-at "\\((\\|\\[\\|{\\)") (setq level (+ level 1)))
-              ((looking-at "\\()\\|\\]\\|}\\)") (setq level (- level 1))))
+              ((looking-at "\\()\\|\\]\\|}\\)") (setq level (- level 1)))
+              ((looking-at "=") (setq saw-equals-sign t)))
         (forward-char))
       ;; Handle the case of current line ending with a closing paren
       (goto-char start-of-current-line)
       (if (looking-at "^\\s-*\\()\\|\\]\\|}\\)")
           (setq level (- level 1))))
     (if (< level 0) (setq level 0))
+    (if equals-indenting-level
+        (setq level (1+ level)))
     (indent-line-to (* level tab-width))))
 
 ;; Syntax highlighting via font-lock
