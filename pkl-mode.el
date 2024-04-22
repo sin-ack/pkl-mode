@@ -27,30 +27,39 @@
   :group 'languages
   :prefix "pkl-")
 
-(defcustom pkl-enable-rainbow-delimiters t
-  "Whether to enable rainbow-delimiters integration in Pkl mode."
-  :type 'boolean
-  :group 'pkl)
+(defcustom pkl-enable-copilot :auto
+  "Whether to enable Copilot integration in Pkl mode.
+The integration requires copilot.el to be installed.
 
-(defcustom pkl-enable-copilot t
-  "Whether to enable Copilot integration in Pkl mode."
-  :type 'boolean
+If set to `:auto', the integration will be enabled if copilot.el is
+available, and silently disabled otherwise."
+  :type '(choice (const :tag "Yes" t)
+          (const :tag "No" nil)
+          (const :tag "Auto" :auto))
   :group 'pkl)
 
 ;; Internal variables
-
-(defvar pkl--feature-rainbow-delimiters nil
-  "Whether `rainbow-delimiters-mode' is available.")
 
 (defvar pkl--feature-copilot nil
   "Whether `copilot-mode' is available.")
 
 ;; Optional features
 
-(when (and pkl-enable-rainbow-delimiters (require 'rainbow-delimiters nil t))
-  (setq pkl--feature-rainbow-delimiters t))
-(when (and pkl-enable-copilot (require 'copilot nil t))
-  (setq pkl--feature-copilot t))
+(defmacro pkl--optionally-enable (feature flag &rest body)
+  "Enable FEATURE if FLAG is t, and execute BODY."
+  (declare (indent 1))
+  `(cond ((eq ,feature :auto) (when ,flag ,@body))
+         ((eq ,feature t)
+          (if ,flag ,@body
+            (warn "%s is t, but the relevant package is not available.  Please install it or change the option." ',feature)))))
+
+(when (require 'copilot nil t) (setq pkl--feature-copilot t))
+;; Variables defined by copilot.el
+(defvaralias 'pkl--copilot-indentation-alist 'copilot-indentation-alist)
+
+(defun pkl--integrate-copilot ()
+  "Integrate Copilot with Pkl mode."
+  (add-to-list 'pkl--copilot-indentation-alist '(pkl-mode tab-width)))
 
 ;; Indentation
 
@@ -216,22 +225,10 @@
   (setq-local font-lock-defaults '(pkl-font-lock-keywords))
   (setq-local indent-line-function #'pkl-indent-line)
 
-  ;; Integrations
-
-  (when pkl-enable-rainbow-delimiters
-    (if pkl--feature-rainbow-delimiters
-        (progn
-          (rainbow-delimiters-mode 1))
-      (message "pkl-enable-rainbow-delimiters is t but rainbow-delimiters.el is missing.  Please install it or set pkl-enable-rainbow-delimiters to nil."))))
+  (pkl--optionally-enable pkl-enable-copilot pkl--feature-copilot (pkl--integrate-copilot)))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.pkl\\'" . pkl-mode))
-
-(when pkl-enable-copilot
-  (if pkl--feature-copilot
-      (progn
-        (add-to-list 'copilot-indentation-alist '(pkl-mode tab-width)))
-    (message "pkl-enable-copilot is t but copilot.el is missing.  Please install it or set pkl-enable-copilot to nil.")))
 
 (provide 'pkl-mode)
 ;;; pkl-mode.el ends here
