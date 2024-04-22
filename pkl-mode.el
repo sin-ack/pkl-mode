@@ -230,5 +230,8 @@ available, and silently disabled otherwise."
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.pkl\\'" . pkl-mode))
 
+;;;###autoload
+(add-to-list 'auto-mode-alist '("PklProject\\'" . pkl-mode))
+
 (provide 'pkl-mode)
 ;;; pkl-mode.el ends here
